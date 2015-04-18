@@ -1,19 +1,21 @@
 var test = require("./index.js");
 var result;
 
-result = test(function(argument) {
-argument.secret === 10; /// argument passed in
+result = test(function(argument, fs) {
 this.secret === 3; /// context preserved
 
-"code"; /// passed test
+argument.secret === 10; /// argument passed in
+fs; /// (second argument)
+
+true; /// passed test
 false;  /// failed test
 
 if (false) {
   "hidden test"; /// unreached test
 }
 
-true;   /// spaces preceeding the comment
-true;		/// tabs preceeding the comment
+"spaces";   /// spaces preceeding the comment
+"tabs";		/// tabs preceeding the comment
 
 1 === 1; /// should test 1 === 1
 
@@ -36,7 +38,8 @@ var error; try { nonexistent } catch(e) { error = e; } (error instanceof Referen
 JSON;
 }, "NODE").call(
 	{ secret: 3 }, // context
-	{ secret: 10 } // argument
+	{ secret: 10 }, // argument
+	require("fs") // fs
 );
 console.log("/* FEATURE DEMO */\n" + result.toString());
 
