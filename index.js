@@ -73,7 +73,6 @@ function test(code, source__dirname, source__filename) {
 	
 	fs.writeFileSync(__dirname + "/run", run);
 	try {
-		//console.log("node '" + __dirname + "/" + child + "'");
 		var out = child_process.execSync(
 			'node "' + __dirname + '/run"',
 			{ cwd: source__dirname }
@@ -99,8 +98,8 @@ function test(code, source__dirname, source__filename) {
 		});
 	}
 	finally {
-		fs.unlinkSync(__dirname + "/run");
-		fs.unlinkSync(__dirname + "/out");
+		if (fs.existsSync(__dirname + "/run")) { fs.unlinkSync(__dirname + "/run"); }
+		if (fs.existsSync(__dirname + "/out")) { fs.unlinkSync(__dirname + "/out"); }
 	}
 
 	testIndex = 0;
