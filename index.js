@@ -42,12 +42,21 @@ function test(code, source__dirname, source__filename) {
 	var testCount = 0;
 	code = code.toString().match(/^(function\s*\S*\s*\([^)]*\)\s*\{)([\W\w]*)\}$/);
   
-	var findParts = /([\W\w]*?)(?:(\/\/(?:(?!\/)|(?=\/\/))[^\r\n]*|\/\*[\W\w]*?\*\/|"[^"\\\r\n]*(?:\\[\W\w][^"\\\r\n]*)*"|'[^'\\\r\n]*(?:\\[\W\w][^'\\\r\n]*)*')|(;)([ \t]*)(\/\/\/(?!\/)[^\r\n]*(?:\s*\/\/\/(?!\/)[^\r\n]*)*)|$)/g;
+	var findParts = /([\W\w]*?)(?:(\/\/(?:(?!\/)|(?=\/\/))[^\r\n]*|\/\*[\W\w]*?\*\/|"[^"\\\r\n]*(?:\\[\W\w][^"\\\r\n]*)*"|'[^'\\\r\n]*(?:\\[\W\w][^'\\\r\n]*)*')|(;)(\s*)(\/\/\/(?!\/)[^\r\n]*(?:\s*\/\/\/(?!\/)[^\r\n]*)*|\/\*\/\/\/(?!\/)[\W\w]*?\/\/\/\*\/)|$)/g;
   
 	var testIndex = 0;
 	var run = (
 		'var __dirname = ' + JSON.stringify(source__dirname) + ', __filename = ' + JSON.stringify(source__filename) + ';\n' +
 		'var ' + failed + ' = 0, ' + passed + ' = 0, ' + untested + ' = 0, ' + tests + ' = [], ' + render + ' = "", ' + error + ';\n\n' +
+		'function throwError(error) {\n' +
+			'var obj = {};\n' +
+			'obj.type = this.constructor.name;\n' +
+			'Object.getOwnPropertyNames(error).forEach(function(key) {\n' +
+				'obj[key] = error[key];\n' +
+			'}, this);\n' +
+			'process.stdout.write("{!!return error = " + JSON.stringify(obj) + "!!}");\n' +
+			'process.exit();\n' +
+		'}\n\n' +
 		'try {\n' +
 		  code[2].replace(findParts, function(match, ignored, ignored2, testSemicolon, testSpacing, test) {
 			var result = ignored + (ignored2 || "");
@@ -62,45 +71,36 @@ function test(code, source__dirname, source__filename) {
 		  }) + '\n\n' +
 		'}\n' +
 		'catch(error) {\n' +
-			'Error.prototype.toJSON = function() {\n'+
-					'var alt = {}; alt.type = this.constructor.name; Object.getOwnPropertyNames(this).forEach(function (key) { alt[key] = this[key]; }, this); return alt;' +
-			'};\n' +
-			'process.stdout.write("{!!return error = " + JSON.stringify(error) + "!!}");' +
+			'throwError(error)\n' +
 		'}'
 	);
 
 	var result = { tests: [], detected: testIndex, passed: 0, failed: 0, tested: 0, untested: 0, error: null, log: "" };
 	
 	fs.writeFileSync(__dirname + "/run", run);
-	try {
-		var out = child_process.execSync(
-			'node "' + __dirname + '/run"',
-			{ cwd: source__dirname }
-		);
-		out = out.toString();
-		fs.writeFileSync(__dirname + "/out", out);
-		out.replace(/([\W\w]*?)(?:\{!!return (?:error = ([\W\w]*?)(?=!!\})|tests\[(\d+)\] = (true|false))!!\}|$)/g, function(match, log, error, testIndex, testPassed) {
-			result.log += (log || "");
-			
-			if (error) { result.error = JSON.parse(error); }
-			else if (testIndex) {
-				if (testPassed === "true") {
-					result.tests[testIndex] = true;
-					result.passed++;
-				}
-				else {
-					result.tests[testIndex] = false;
-					result.failed++;
-				}
-				
-				result.tested++;
+	var out = child_process.execSync(
+		'node "' + __dirname + '/run"',
+		{ cwd: source__dirname }
+	);
+	out = out.toString();
+	fs.writeFileSync(__dirname + "/out", out);
+	out.replace(/([\W\w]*?)(?:\{!!return (?:error = ([\W\w]*?)(?=!!\})|tests\[(\d+)\] = (true|false))!!\}|$)/g, function(match, log, error, testIndex, testPassed) {
+		result.log += (log || "");
+		
+		if (error) { result.error = JSON.parse(error); }
+		else if (testIndex) {
+			if (testPassed === "true") {
+				result.tests[testIndex] = true;
+				result.passed++;
 			}
-		});
-	}
-	finally {
-		if (fs.existsSync(__dirname + "/run")) { fs.unlinkSync(__dirname + "/run"); }
-		if (fs.existsSync(__dirname + "/out")) { fs.unlinkSync(__dirname + "/out"); }
-	}
+			else {
+				result.tests[testIndex] = false;
+				result.failed++;
+			}
+			
+			result.tested++;
+		}
+	});
 
 	testIndex = 0;
 	var render = (
@@ -108,12 +108,11 @@ function test(code, source__dirname, source__filename) {
 			code[2].replace(findParts, function(match, ignored, ignored2, testSemicolon, testSpacing, test) {
 			  var result = stringify(ignored + (ignored2 || ""), style);
 			  if (test) {
-				result += (testSemicolon + testSpacing +
-				  '" +\n(result.tests[' + testIndex + '] === undefined ? (result.untested++, "' + style.preUntested + '") : ' +
+				result += stringify(testSemicolon + testSpacing, style) +
+					'" +\n(result.tests[' + testIndex + '] === undefined ? (result.untested++, "' + style.preUntested + '") : ' +
 					'result.tests[' + testIndex + '] ? "' + style.preGood + '" : "' + style.preBad + '") +\n"' +
-				  stringify(test, style) + '" +\n' +
-				  '"' + style.post
-				);
+					stringify(test, style) + '" +\n' +
+					'"' + style.post;
 				testIndex++;
 			  }
 			  return result;
@@ -135,12 +134,7 @@ function test(code, source__dirname, source__filename) {
 	);
 	fs.writeFileSync(__dirname + "/renderer", render);
 	
-	try {
-		return new Function("require,result", render)(require, result);
-	}
-	finally {
-		fs.unlink(__dirname + "/renderer");
-	}
+	return new Function("require,result", render)(require, result);
 }
 
 if (typeof module !== "undefined") { module.exports = test; }
