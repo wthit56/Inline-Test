@@ -46,61 +46,76 @@ function test(code, source__dirname, source__filename) {
   
 	var testIndex = 0;
 	var run = (
-		'var __dirname = ' + JSON.stringify(source__dirname) + ', __filename = ' + JSON.stringify(source__filename) + ';\n' +
-		'var ' + failed + ' = 0, ' + passed + ' = 0, ' + untested + ' = 0, ' + tests + ' = [], ' + render + ' = "", ' + error + ';\n\n' +
-		'function throwError(error) {\n' +
-			'var obj = {};\n' +
-			'obj.type = this.constructor.name;\n' +
-			'Object.getOwnPropertyNames(error).forEach(function(key) {\n' +
-				'obj[key] = error[key];\n' +
-			'}, this);\n' +
-			'process.stdout.write("{!!return error = " + JSON.stringify(obj) + "!!}");\n' +
-			'process.exit();\n' +
-		'}\n\n' +
-		'try {\n' +
+		'var __dirname = ' + JSON.stringify(source__dirname) + ', __filename = ' + JSON.stringify(source__filename) + ';' +
+		'var ' + failed + ' = 0, ' + passed + ' = 0, ' + untested + ' = 0, ' + tests + ' = [], ' + render + ' = "", ' + error + ';' +
+		'function throwError(error) {' +
+			'var obj = {};' +
+			'obj.type = this.constructor.name;' +
+			'Object.getOwnPropertyNames(error).forEach(function(key) {' +
+				'obj[key] = error[key];' +
+			'}, this);' +
+			'process.stdout.write("{!!return error = " + JSON.stringify(obj) + "!!}");' +
+			'process.exit();' +
+		'}' +
+		'try {' +
 		  code[2].replace(findParts, function(match, ignored, ignored2, testSemicolon, testSpacing, test) {
 			var result = ignored + (ignored2 || "");
 			if (test) {
 			  result += (
-				'\n? process.stdout.write("{!!return tests[' + testIndex + '] = true!!}") ' +
-				'\n: process.stdout.write("{!!return tests[' + testIndex + '] = false!!}");\n'
+				'? process.stdout.write("{!!return tests[' + testIndex + '] = true!!}") ' +
+				': process.stdout.write("{!!return tests[' + testIndex + '] = false!!}");'
 			  );
 			  testIndex++;
 			}
 			return result;
-		  }) + '\n\n' +
-		'}\n' +
-		'catch(error) {\n' +
-			'throwError(error)\n' +
+		  }) +
+		'}' +
+		'catch(error) {' +
+			'throwError(error)' +
 		'}'
 	);
 
 	var result = { tests: [], detected: testIndex, passed: 0, failed: 0, tested: 0, untested: 0, error: null, log: "" };
 	
 	fs.writeFileSync(__dirname + "/run", run);
-	var out = child_process.execSync(
-		'node "' + __dirname + '/run"',
-		{ cwd: source__dirname }
-	);
-	out = out.toString();
-	fs.writeFileSync(__dirname + "/out", out);
-	out.replace(/([\W\w]*?)(?:\{!!return (?:error = ([\W\w]*?)(?=!!\})|tests\[(\d+)\] = (true|false))!!\}|$)/g, function(match, log, error, testIndex, testPassed) {
-		result.log += (log || "");
-		
-		if (error) { result.error = JSON.parse(error); }
-		else if (testIndex) {
-			if (testPassed === "true") {
-				result.tests[testIndex] = true;
-				result.passed++;
-			}
-			else {
-				result.tests[testIndex] = false;
-				result.failed++;
-			}
+	
+	var ran = true;
+	try {
+		var out = child_process.execSync(
+			'node "' + __dirname + '/run"',
+			{ cwd: source__dirname }
+		);
+	}
+	catch(error) {
+		console.log("ERROR:", error.stack);
+		result.error = error;
+		ran = false;
+	}
+	
+	if (ran) {
+		out = out.toString();
+		fs.writeFileSync(__dirname + "/out", out);
+		out.replace(/([\W\w]*?)(?:\{!!return (?:error = ([\W\w]*?)(?=!!\})|tests\[(\d+)\] = (true|false))!!\}|$)/g, function(match, log, error, testIndex, testPassed) {
+			result.log += (log || "");
 			
-			result.tested++;
-		}
-	});
+			if (error) { result.error = JSON.parse(error); }
+			else if (testIndex) {
+				if (testPassed === "true") {
+					result.tests[testIndex] = true;
+					result.passed++;
+				}
+				else {
+					result.tests[testIndex] = false;
+					result.failed++;
+				}
+				
+				result.tested++;
+			}
+		});
+	}
+	else {
+		if (fs.existsSync(__dirname + "/out")) { fs.unlink(__dirname + "/out"); }
+	}
 
 	testIndex = 0;
 	var render = (
@@ -109,30 +124,35 @@ function test(code, source__dirname, source__filename) {
 			  var result = stringify(ignored + (ignored2 || ""), style);
 			  if (test) {
 				result += stringify(testSemicolon + testSpacing, style) +
-					'" +\n(result.tests[' + testIndex + '] === undefined ? (result.untested++, "' + style.preUntested + '") : ' +
-					'result.tests[' + testIndex + '] ? "' + style.preGood + '" : "' + style.preBad + '") +\n"' +
-					stringify(test, style) + '" +\n' +
+					'" +(result.tests[' + testIndex + '] === undefined ? (result.untested++, "' + style.preUntested + '") : ' +
+					'result.tests[' + testIndex + '] ? "' + style.preGood + '" : "' + style.preBad + '") +"' +
+					stringify(test, style) + '" +' +
 					'"' + style.post;
 				testIndex++;
 			  }
 			  return result;
 			}) +
-		'";\n' +
+		'";' +
 		'var renderFull = render + "' +
 			'" + (result.log ? "/* // STDOUT //\\n" + result.log.replace(/\\r?\\n$/, "") + "\\n*/" : "") + "' +
 			('" + (result.error' +
 				'? "\\n\\n' + style.preBad + '/* // ERROR //\\n' +
-					'" + (result.error.stack || require("util").inspect(result.error)) + "\\n*/' + style.post + '"\n' +
+					'" + (result.error.stack || require("util").inspect(result.error)) + "\\n*/' + style.post + '"' +
 				': ""' +
 			') + "') +
-			'\\n\\n// Tests ' +
-				'failed: " + (result.failed > 0 ? "' + style.preBad + '" : "") + result.failed + "' + style.post + ', ' +
-				'passed: " + (result.failed > 0 ? "" : "' + style.preGood + '") + result.passed + "' + style.post + ', ' +
-				'out of " + result.tested + " tests" + (result.untested > 0 ? " ' + style.preUntested + '(" + result.untested + " untested)' + style.post + '" : "") + " //' +
-		'";\n' +
+			(ran
+				? '\\n\\n// Tests ' +
+					'failed: " + (result.failed > 0 ? "' + style.preBad + '" : "") + result.failed + "' + style.post + ', ' +
+					'passed: " + (result.failed > 0 ? "" : "' + style.preGood + '") + result.passed + "' + style.post +
+					'" + ((result.passed !== 0) && (result.failed !== 0) '+
+						'? ", out of " + result.tested + " tests" : "") +' +
+					'(result.untested > 0 ? " ' + style.preUntested + '(" + result.untested + " untested)' + style.post + '" : "") + " //'
+				: ''
+			) +
+		'";' +
 		'return { render: render, renderFull: renderFull, detected: result.detected, failed: result.failed, passed: result.passed, tested: (result.failed + result.passed), untested: result.untested, error: result.error, log: result.log };'
 	);
-	fs.writeFileSync(__dirname + "/renderer", render);
+	fs.writeFileSync(__dirname + "/render", render);
 	
 	return new Function("require,result", render)(require, result);
 }
