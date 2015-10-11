@@ -1,4 +1,4 @@
-var parse = /(;?[ \t]*)\/\/\/[ \t]*([^\r\n]*)/g,
+var parse = /(;?[ \t]*)\/\/\/[ \t]*[^\r\n]*/g,
 	findBody = /^function\s*[^\s(]*\([^)]*\)\s*\{([\W\w]*)\}$/;
 module.exports = function(source, callback) {
 	source = source.toString().replace(findBody, "$1");
@@ -6,7 +6,7 @@ module.exports = function(source, callback) {
 	while(source.indexOf("result" + (id = Math.random().toString().substr(2))) !== -1);
 
 	var tests = "", i = 0;
-	var rendered = source.replace(parse, function(match, pre, message, index) {
+	var rendered = source.replace(parse, function(match, pre, index) {
 		tests += ", { from:" + (index + pre.length) + ", to:" + (index + match.length) + ", passed: 0, failed: 0 }";
 		var result = (
 			" ? result" + id + ".tests[" + i + "].passed++" +
