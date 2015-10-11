@@ -4,7 +4,9 @@ var expect = module.exports = function expect(message, pass) {
 		(pass ? expect.style.pass + "/" : expect.style.fail + "X") + expect.style.reset +
 		" " + (message || (pass ? "(pass)" : "(fail)"))
 	);
-		
+	
+	if (!pass) { require("fs").appendFileSync("test-failed.txt", message); }
+	
 	if (pass) { expect.results.passed++; }
 	else { expect.results.failed++; }
 	expect.results.total++;
