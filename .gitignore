@@ -1,8 +1,6 @@
-simple
-run
-out
-render
-
+v0.1
+rendered.js
+test-failed.txt
 
 # Windows image file caches
 Thumbs.db
