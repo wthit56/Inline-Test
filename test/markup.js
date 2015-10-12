@@ -1,36 +1,97 @@
-var expect = require("./expect.js"), xexpect = { group: function() {} }, equal = require("./equal.js"), similar = require("./similar.js"), shape = require("./shape.js");
+var expect = require("./expect.js"), xexpect = { group: function() {} }, equal = require("./equal.js"), similar = require("./similar.js"), shape = require("./shape.js"), literal = require("./literal.js");
 
 var inline_test = require("../index.js"), markup = require("../markup.js");
 
-var styles = { passOpen:"[", passClose: "]", failOpen: "<", failClose: ">" };
+var styles = {
+	pass: { open: "[", close: "]" },
+	fail: {open: "<", close: ">" },
+	other: { open: "{", close: "}" }
+};
 
 function test(message, src, expected) {
-	var results = inline_test(src);
-	if (!equal(message, markup(results, styles), expected)) {
-		console.log("inline-test results:", results);
+	var result = inline_test(src)(null, require);
+	if (!equal(message, markup(result, styles), expected)) {
+		console.log("inline-test result:", result);
 	}
 }
 
+expect.results.reset();
 test("does not change the source", function() { "code"; }, ' "code"; ');
+test("adds stdout", function() {
+	console.log("logged data", 1);
+	console.log(require("util").inspect({}));
+}, literal(function() {/*
+	console.log("logged data", 1);
+	console.log(require("util").inspect({}));
+
+{/* STDOUT: //
+logged data 1
+{}
+*\/}*/}));
 
 expect.group("passing tests", function() {
-	test("truthy marked up", function() {
+	test("marked up", function() {
 		true /// passes
 		1 /// truthy also passes
-	}, "\r\n\t\ttrue [/// passes]\r\n\t\t1 [/// truthy also passes]\r\n\t");
+	}, literal(function() {/*
+		true [/// passes]
+		1 [/// truthy also passes]
+	*/}));
 	
 	expect.group("no message", function() {
 		test("just whitespace", function() {
 			true /// 	
-		}, "\r\n\t\t\ttrue [/// \t(passed)]\r\n\t\t");
+		}, literal(function() {/*
+			true [/// 	(passed)]
+		*/}));
 		test("no whitespace", function() {
 			true ///
-		}, "\r\n\t\t\ttrue [/// (passed)]\r\n\t\t");
+		}, literal(function() {/*
+			true [/// (passed)]
+		*/}));
+		console.log("(NOTE: No-message checks will be made implicity in future tests.)");
 	});
 });
 
-xexpect.group("failing tests", function() {
-	test("markedup", function() {
-		false /// fails
-	}, "\r\n\t\tfalse [/// fails]\r\n\t");
-});
+test("failing tests marked up", function() {
+	false /// fails
+	0 /// falsy also fails
+	false /// 	
+	false ///
+}, literal(function() {/*
+	false </// fails>
+	0 </// falsy also fails>
+	false </// 	(failed)>
+	false </// (failed)>
+*/}));
+
+test("other notes marked up", function() {
+	if (false) {
+		true /// never run
+		1 /// 	
+		"truthy" ///
+	}
+	for (var i = 0; i < 2; i++) {
+		!i /// bit of both
+		!i /// 	
+		!i ///
+	}
+}, literal(function() {/*
+	if (false) {
+		true {/// never run (did not run)}
+		1 {/// 	(did not run)}
+		"truthy" {/// (did not run)}
+	}
+	for (var i = 0; i < 2; i++) {
+		!i {/// bit of both (1 passed, 1 failed)}
+		!i {/// 	(1 passed, 1 failed)}
+		!i {/// (1 passed, 1 failed)}
+	}
+*/}));
+
+var frac = (expect.results.passed / expect.results.total);
+console.log("\n" + [
+	"(" + (frac === 1 ? expect.style.pass : expect.style.fail) + (frac * 100).toPrecision(3) + "%" + expect.style.reset + ")",
+	"Pass: " + expect.style.pass + expect.results.passed + expect.style.reset,
+	"Fail: " + (expect.results.failed ? expect.style.fail : "") + expect.results.failed + expect.style.reset
+].join(" "));
