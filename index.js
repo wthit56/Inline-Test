@@ -1,5 +1,5 @@
 var parse = /("(?:[^"\r\n]*(?:\\[\W\w])?)*"|'(?:[^'\r\n]*(?:\\[\W\w])?)*')|(;?[ \t]*)\/\/\/[ \t]*[^\r\n]*/g,
-	findBody = /^function\s*[^\s(]*\([^)]*\)\s*\{([\W\w]*)\}$/;
+	findBody = /^function\s*[^\s(]*\([^)]*\)\s*\{([\W\w]*)\}$/; 
 var inline_test = module.exports = function(source, callback) {
 	source = source.toString().replace(findBody, "$1");
 	var id;
