@@ -5,7 +5,9 @@ var expect = module.exports = function expect(message, pass) {
 		" " + (message || (pass ? "(pass)" : "(fail)"))
 	);
 	
-	if (!pass) { require("fs").appendFileSync("test-failed.txt", message); }
+	if (!pass) {
+		require("fs").appendFileSync("test-failed.txt", message+"\n\n");
+	}
 	
 	if (pass) { expect.results.passed++; }
 	else { expect.results.failed++; }
@@ -24,6 +26,7 @@ expect.results = { passed: 0, failed: 0, total: 0, reset: function() {
 
 var indent = "";
 expect.group = function(message, grouped) {
+	// TODO: add partial running support	
 	expect.log(indent + "# " + message);
 	indent += expect.group.indent;
 	grouped();

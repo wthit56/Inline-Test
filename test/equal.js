@@ -22,7 +22,7 @@ function test(message, got, expected, pass) {
 
 function buildMessage(message, got, expected, pass) {
 	if (!pass) {
-		message += (message ? " " : "[fail] ") + " (got " + JSON.stringify(got) + ", expected" + JSON.stringify(expected) + ")";
+		message += (message ? " " : "[fail] ") + " (got " + JSON.stringify(got) + ", expected " + JSON.stringify(expected) + ")";
 	}
 	return message;
 }

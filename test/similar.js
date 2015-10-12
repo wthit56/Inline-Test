@@ -1,22 +1,24 @@
+var util = require("util");
 var expect = require("./expect.js");
 
 function similar(message, got, expected) {
 	var pass = isSimilar(got, expected);
 	if (!pass) {
-		message += (message ? " " : "[Fail] ") + " (got " + JSON.stringify(got) + ", expected " + JSON.stringify(expected) + ")";
+		message += (message ? " " : "[Fail] ") + " (got " + util.inspect(got) + ", expected partial " + util.inspect(expected) + ")";
 	}
 	require("fs").appendFileSync("test-failed.txt", message);
 	return expect(message, pass);
 }
 
-var forward = false;
-similar.forward = function similar_forward(message, got, expected) {
-	forward = true;
+var partial = false;
+similar.partial = function similar_forward(message, got, expected) {
+	partial = true;
 	var result = similar(message, got, expected);
-	forward = false;
+	partial = false;
 };
 
 var isBase = /^(?:function|number|boolean|string|undefined|symbol)$/;
+var util = require("util");
 function isSimilar(a, b) {
 	var at = typeof a, bt = typeof b;
 	if (at !== bt) { return false; }
@@ -31,11 +33,10 @@ function isSimilar(a, b) {
 	}
 	else {
 		var ak = Object.keys(a).sort(), bk = Object.keys(b).sort();
-		if (!forward && ak.length !== bk.length) { return false; }
+		if (!partial && ak.length !== bk.length) { return false; }
 		else {
 			for (var i = 0, l = bk.length; i < l; i++) {
-				if ((!forward && (ak[i] !== bk[i])) || !isSimilar(a[bk[i]], b[bk[i]])) {
-					console.log("!"+ bk[i]+":", a[bk[i]], b[bk[i]]);
+				if ((!partial && (ak[i] !== bk[i])) || !isSimilar(a[bk[i]], b[bk[i]])) {
 					return false;
 				}
 			}
