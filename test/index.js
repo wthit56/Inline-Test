@@ -1,29 +1,18 @@
 var expect = require("./expect.js"), xexpect = { group: function() {} }, equal = require("./equal.js"), similar = require("./similar.js"), shape = require("./shape.js");
 
 var inline_test = require("../index.js");
+function inline_test_wrapper(src, callback) {
+	return eval("(" + inline_test(src) + ")()");
+}
 
 expect.results.reset();
-expect.group("Callback used if supplied", function() {
-	var initialResult, callbackResult;
-	var src = function() { /* test */ }, expected = { src: " /* test */ " };
-	
-	expect.group("with callback", function() {
-		similar.partial("initial result (returned by inline-test)", (initialResult = inline_test(src)(function callback(result) { callbackResult = result; })), expected);
-		similar.partial("callback result (as argument to callback)", callbackResult, expected);
-		equal.strict("callback result is the same object", callbackResult, initialResult);
-	});
-	
-	expect.group("without callback", function() {
-		similar.partial("initial result (returned by inline-test)", inline_test(src)(), expected);
-	});
-});
 expect.group("result", function() {
-	shape("has the right shape", inline_test(function() {})(), { src: "", stdout: "", tests: [] });
+	shape("has the right shape", inline_test_wrapper(function() {}), { src: "", stdout: "", tests: [] });
 
 	expect.group(".src", function() {
 		var findBody = /^function\s*[^\s(]*\s*\([^(]*\)\s*\{([\W\w]*)\}$/;
 		function src_test(message, src) {
-			similar.partial(message, inline_test(src)(), { src: src.toString().replace(findBody, "$1") });
+			similar.partial(message, inline_test_wrapper(src), { src: src.toString().replace(findBody, "$1") });
 		}
 		
 		src_test("Empty", function() {});
@@ -43,11 +32,11 @@ expect.group("result", function() {
 	});
 
 	expect.group(".stdout", function() {
-		similar.partial("1,2,3 4", inline_test(function() {
+		similar.partial("1,2,3 4", inline_test_wrapper(function() {
 			console.log(1); console.log("2"); console.log(3, '4');
-		})(), { stdout: "1\n2\n3 '4'\n" });
+		}), { stdout: "1\n2\n3 '4'\n" });
 		
-		similar.partial("Nothing logged", inline_test(function() {})(), { stdout: "" });
+		similar.partial("Nothing logged", inline_test_wrapper(function() {}), { stdout: "" });
 	});
 	
 	expect.group(".tests", function() {
@@ -64,7 +53,7 @@ expect.group("result", function() {
 			"/// ignored test";
 		}
 		var expectedShape = { from: 1, to: 1, passed: 1, failed: 1 };
-		var result = inline_test(src)();
+		var result = inline_test_wrapper(src);
 		expect("result produced", result);
 		function test_test(index, message, expected) {
 			expect.group("result.test[" + index + "] (" + message + ")", function() {
@@ -80,8 +69,8 @@ expect.group("result", function() {
 		test_test(3, "never run", { from: 155, to: 172, passed: 0, failed: 0 });
 		test_test(4, "with semicolon", { from: 201, to: 218, passed: 1, failed: 0 });
 		expect.group("strings ignored", function() {
-			expect("double-quoted string", inline_test(function() { string = "/// ignored" })().tests.length === 0);
-			expect("single-quoted string", inline_test(function() { string = '/// ignored' })().tests.length === 0);
+			expect("double-quoted string", inline_test_wrapper(function() { string = "/// ignored" }).tests.length === 0);
+			expect("single-quoted string", inline_test_wrapper(function() { string = '/// ignored' }).tests.length === 0);
 		});
 	});
 });

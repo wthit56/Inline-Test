@@ -9,7 +9,7 @@ var styles = {
 };
 
 function test(message, src, expected) {
-	var result = inline_test(src)(null, require);
+	var result = eval("(" + inline_test(src) + ")()");
 	if (!equal(message, markup(result, styles), expected)) {
 		console.log("inline-test result:", result);
 	}
