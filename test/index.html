@@ -1,0 +1,13 @@
+<!doctype html>
+<body>
+	<style>
+		body { font:2em monospace; }
+	</style>
+	<a href="?index.js">index.js</a> | <a href="?markup.js">markup.js</a>
+	<p>Open the browser's console to view the test logs [F12]</p>
+	<script src="http-require.js" type="text/javascript"></script>
+	<script type="text/javascript">
+		//require.throw = false;
+		document.body.appendChild(document.createElement("SCRIPT")).src = window.location.href.match(/\?(.*)$/)[1];
+	</script>
+</body>
