@@ -1,4 +1,3 @@
-var util = require("util");
 var parseTarget = /\/\/\/(\s*)(\S[^\r\n]*)?/;
 var markup = module.exports = function(inline_test_result /* from inline test */, styles) {
 	var result = inline_test_result, src = result.src, offset = 0;
@@ -9,11 +8,8 @@ var markup = module.exports = function(inline_test_result /* from inline test */
 		if (test.failed && !test.passed) { style = styles.fail; }
 		else if (test.passed && !test.failed) { style = styles.pass; }
 		
-		//require("fs").appendFileSync("test-failed.txt", "\n\n>>"+src+"<<\n"+util.inspect(test)+"\n"+offset+"\n");
-		
 		var target = src.substring(test.from + offset, test.to + offset);
 		var parsed = target.match(parseTarget);
-		//console.log(util.inspect(src.substring(test.from + offset)), "->", parsed);
 		
 		note = "";
 		if (test.passed + test.failed > 1) {
@@ -40,16 +36,6 @@ var markup = module.exports = function(inline_test_result /* from inline test */
 		src.substring(test.to + offset));
 		
 		offset += style.open.length + style.close.length + note.length;
-	}
-	
-	if (result.stdout) {
-		var stdout = result.stdout.replace(/\n/g, "\r\n");
-		src += "\r\n" + styles.other.open + (
-			"/* STDOUT: //\r\n" +
-			stdout +
-			(stdout.substr(-2) === "\r\n" ? "" : "\r\n") +
-			"*/"
-		) + styles.other.close;
 	}
 	
 	return src;
