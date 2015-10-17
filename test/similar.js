@@ -1,12 +1,13 @@
-var util = require("util");
+try { var fs = require("fs"); } catch(e) {}
+var stringify = require("./stringify.js");
 var expect = require("./expect.js");
 
 function similar(message, got, expected) {
 	var pass = isSimilar(got, expected);
 	if (!pass) {
-		message += (message ? " " : "[Fail] ") + " (got " + util.inspect(got) + ", expected partial " + util.inspect(expected) + ")";
+		message += (message ? " " : "[Fail] ") + " (got " + stringify(got) + ", expected partial " + stringify(expected) + ")";
 	}
-	require("fs").appendFileSync("test-failed.txt", message);
+	if (fs) { fs.appendFileSync("test-failed.txt", message); }
 	return expect(message, pass);
 }
 
@@ -18,7 +19,6 @@ similar.partial = function similar_forward(message, got, expected) {
 };
 
 var isBase = /^(?:function|number|boolean|string|undefined|symbol)$/;
-var util = require("util");
 function isSimilar(a, b) {
 	var at = typeof a, bt = typeof b;
 	if (at !== bt) { return false; }

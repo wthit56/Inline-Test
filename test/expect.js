@@ -1,3 +1,5 @@
+try { var fs = require("fs"); } catch (e) {}
+
 var expect = module.exports = function expect(message, pass) {
 	expect.log(
 		indent +
@@ -6,7 +8,7 @@ var expect = module.exports = function expect(message, pass) {
 	);
 	
 	if (!pass) {
-		require("fs").appendFileSync("test-failed.txt", message+"\n\n");
+		if (fs) { fs.appendFileSync("test-failed.txt", message+"\n\n"); }
 	}
 	
 	if (pass) { expect.results.passed++; }
@@ -15,11 +17,18 @@ var expect = module.exports = function expect(message, pass) {
 	
 	return pass;
 };
-expect.style = {
-	pass: "\x1b[1m\x1b[32m",
-	fail: "\x1b[1m\x1b[31m",
-	reset: "\x1b[0m"
-};
+
+if (typeof process !== "undefined") {
+	expect.style = {
+		pass: "\x1b[1m\x1b[32m",
+		fail: "\x1b[1m\x1b[31m",
+		reset: "\x1b[0m"
+	};
+}
+else {
+	expect.style = { pass: "", fail: "", reset: "" };
+}
+
 expect.results = { passed: 0, failed: 0, total: 0, reset: function() {
 	expect.results.passed = expect.results.failed = expect.results.total = 0;
 } };
@@ -33,4 +42,6 @@ expect.group = function(message, grouped) {
 	indent = indent.substr(expect.group.indent.length);
 };
 expect.group.indent = "  ";
-expect.log = console.log;
+expect.log = function() {
+	console.log.apply(console, arguments);
+}

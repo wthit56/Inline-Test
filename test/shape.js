@@ -1,9 +1,9 @@
-var util = require("util");
+var stringify = require("./stringify.js");
 var expect = require("./expect.js");
 var forward = false;
 var shape = module.exports = function(message, got, expected) {
 	var pass = hasShape(got, expected);
-	if (!pass) { message += " (got " + util.inspect(got) + ", expected shape " + util.inspect(expected) + ")"; }
+	if (!pass) { message += " (got " + stringify(got) + ", expected shape " + stringify(expected) + ")"; }
 	expect(message, pass);
 };
 shape.forward = function() {

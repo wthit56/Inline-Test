@@ -1,3 +1,5 @@
+var stringify = require("./stringify.js");
+
 var expect = require("./expect.js"), xexpect = { group: function() {} }, equal = require("./equal.js"), similar = require("./similar.js"), shape = require("./shape.js"), literal = require("./literal.js");
 
 var inline_test = require("../index.js"), markup = require("../markup.js");
@@ -17,17 +19,6 @@ function test(message, src, expected) {
 
 expect.results.reset();
 test("does not change the source", function() { "code"; }, ' "code"; ');
-test("adds stdout", function() {
-	console.log("logged data", 1);
-	console.log(require("util").inspect({}));
-}, literal(function() {/*
-	console.log("logged data", 1);
-	console.log(require("util").inspect({}));
-
-{/* STDOUT: //
-logged data 1
-{}
-*\/}*/}));
 
 expect.group("passing tests", function() {
 	test("marked up", function() {

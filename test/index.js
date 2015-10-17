@@ -1,3 +1,5 @@
+var isNode = typeof process !== "undefined";
+
 var expect = require("./expect.js"), xexpect = { group: function() {} }, equal = require("./equal.js"), similar = require("./similar.js"), shape = require("./shape.js");
 
 var inline_test = require("../index.js");
@@ -7,7 +9,7 @@ function inline_test_wrapper(src, callback) {
 
 expect.results.reset();
 expect.group("result", function() {
-	shape("has the right shape", inline_test_wrapper(function() {}), { src: "", stdout: "", tests: [] });
+	shape("has the right shape", inline_test_wrapper(function() {}), { src: "", out: [], tests: [] });
 
 	expect.group(".src", function() {
 		var findBody = /^function\s*[^\s(]*\s*\([^(]*\)\s*\{([\W\w]*)\}$/;
@@ -31,12 +33,27 @@ expect.group("result", function() {
 		});
 	});
 
-	expect.group(".stdout", function() {
-		similar.partial("1,2,3 4", inline_test_wrapper(function() {
-			console.log(1); console.log("2"); console.log(3, '4');
-		}), { stdout: "1\n2\n3 '4'\n" });
+	expect.group(".out", function() {
+		if (isNode) {
+			similar.partial("1,2,3 4", inline_test_wrapper(function() {
+				console.log(1); console.log("2"); console.log(3, '4');
+			}), { out: ["1\n","2\n","3 '4'\n"].map(function(d) { return {type: "stdout", data: d }; }) });
+		}
+		else {
+			similar.partial("1,2,3 4", inline_test_wrapper(function() {
+				console.log(1);
+				console.info("2");
+				console.warn(3, '4');
+				console.error(Number(5), { value: 6 });
+			}), { out: [
+				{ type: "log", data: [1] },
+				{ type: "info", data: ["2"] },
+				{ type: "warn", data: [3, "4"] },
+				{ type: "error", data: [Number(5), { value: 6 }] }
+			] });
+		}
 		
-		similar.partial("Nothing logged", inline_test_wrapper(function() {}), { stdout: "" });
+		similar.partial("Nothing logged", inline_test_wrapper(function() {}), { out: [] });
 	});
 	
 	expect.group(".tests", function() {
