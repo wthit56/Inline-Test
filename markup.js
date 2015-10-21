@@ -1,5 +1,9 @@
 var parseTarget = /\/\/\/(\s*)(\S[^\r\n]*)?/;
 var markup = module.exports = function(inline_test_result /* from inline test */, styles) {
+	if (!styles) {
+		styles = defaultStyles[typeof process === "undefined" ? "HTML" : "Node"]
+	}
+	
 	var result = inline_test_result, src = result.src, offset = 0;
 	for (var i = 0, test, style, note, l = result.tests.length; i < l; i++) {
 		test = result.tests[i];
@@ -39,4 +43,18 @@ var markup = module.exports = function(inline_test_result /* from inline test */
 	}
 	
 	return src;
+};
+
+var resetANSI = "\x1b[0m", resetHTML = "</span>";
+var defaultStyles = {
+	"Node": {
+		pass: { open: "\x1b[1;32m", close: resetANSI },
+		fail: { open: "\x1b[1;31m", close: resetANSI },
+		other: { open: "\x1b[1;36m", close: resetANSI }
+	},
+	"HTML": {
+		pass: { open: "<span style='color:green; font-weight:bold;'>", close: resetHTML },
+		fail: { open: "<span style='color:red; font-weight:bold;'>", close: resetHTML },
+		other: { open: "<span style='color:cyan; font-weight:bold;'>", close: resetHTML }
+	}
 };
