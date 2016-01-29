@@ -22,7 +22,7 @@ var inline_test = module.exports = function(source, silent) {
 	//console.log("rendering...");
 	
 	var rendered = body.replace(parse, function(match, string, pre, index) {
-		console.log("test");
+		//console.log("test");
 		if (string) { return match; }
 		else {
 			tests += ", { from:" + (index + (pre ? pre.length : 0)) + ", to:" + (index + match.length) + ", passed: 0, failed: 0 }";
