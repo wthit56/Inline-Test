@@ -80,6 +80,9 @@ test("other notes marked up", function() {
 	}
 */}));
 
+expect("log added", false);
+expect("summary created", false);
+
 var frac = (expect.results.passed / expect.results.total);
 console.log("\n" + [
 	"(" + (frac === 1 ? expect.style.pass : expect.style.fail) + (frac * 100).toPrecision(3) + "%" + expect.style.reset + ")",
