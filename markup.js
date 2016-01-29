@@ -1,12 +1,13 @@
 var parseTarget = /\/\/\/(\s*)(\S[^\r\n]*)?/;
 var markup = module.exports = function(inline_test_result /* from inline test */, styles) {
-	if (!styles) {
-		styles = defaultStyles[typeof process === "undefined" ? "HTML" : "Node"]
-	}
+	if (!styles) { styles = markup.defaultStyles.current; }
 	
-	var result = inline_test_result, src = result.src, offset = 0;
+	var result = inline_test_result, src = result.src, offset = 0, summary = { passed: 0, failed: 0, didnotrun: 0 };
 	for (var i = 0, test, style, note, l = result.tests.length; i < l; i++) {
 		test = result.tests[i];
+		
+		summary.passed += test.passed;
+		summary.failed += test.failed;
 		
 		style = styles.other;
 		if (test.failed && !test.passed) { style = styles.fail; }
@@ -26,6 +27,7 @@ var markup = module.exports = function(inline_test_result /* from inline test */
 		}
 		
 		if (!note && (test.passed + test.failed === 0)) {
+			summary.didnotrun++;
 			note = "did not run";
 		}
 		if (note) {
@@ -42,11 +44,32 @@ var markup = module.exports = function(inline_test_result /* from inline test */
 		offset += style.open.length + style.close.length + note.length;
 	}
 	
+	if (result.out.length > 0) {
+		src += "\n\n/* OUT //\n" +
+			result.out.map(function(log) {
+				return (markup.typeIndicators[log.type] + " " + log.data);
+			}).join("\n") +
+		"*\/";
+	}
+	
+	src += (
+		"\n\n// Summary: " +
+			styles.pass.open + summary.passed + " passed" + styles.pass.close + ", " +
+			styles.fail.open + summary.failed + " failed" + styles.fail.close + ", " +
+			styles.other.open + summary.didnotrun + " did not run" + styles.other.close +
+		". //"
+	);
+
 	return src;
 };
 
+markup.typeIndicators = {
+	"stdout": ">", "stderr": "!",
+	"log": "#", "info": "=", "warn": "?", "error": "!"
+};
+
 var resetANSI = "\x1b[0m", resetHTML = "</span>";
-var defaultStyles = {
+var defaultStyles = markup.defaultStyles = {
 	"Node": {
 		pass: { open: "\x1b[1;32m", close: resetANSI },
 		fail: { open: "\x1b[1;31m", close: resetANSI },
@@ -58,3 +81,5 @@ var defaultStyles = {
 		other: { open: "<span style='color:cyan; font-weight:bold;'>", close: resetHTML }
 	}
 };
+
+defaultStyles.current = Object.create(markup.defaultStyles[typeof process === "undefined" ? "HTML" : "Node"]);
