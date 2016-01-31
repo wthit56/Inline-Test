@@ -7,9 +7,11 @@ module.exports = function inline_test__module(src, test) {
 	else {
 		// console.log("creating it");
 		
+		var marker = ";;";
 		var it = "", log = "";
 		src.toString().replace(parse, function(match, pre, ignored, hasLineTest, lineTest, hasMultiLineTest, multiLineTest) {
-			ignored = ((pre || "") + (ignored || "")).replace(/\S/g, " ");
+			ignored = ((pre || "") + (ignored || "")).replace(/[^\r\n]/g, ";");
+			//if (ignored.length >= marker.length * 2) { ignored = marker + ignored.substr(marker.length, ignored.length - (marker.length * 2)) + marker; }
 			it += ignored;
 			it += (
 				hasLineTest ? "" + lineTest :
@@ -19,10 +21,13 @@ module.exports = function inline_test__module(src, test) {
 			return match;
 		});
 		
-		console.log("logging");
 		fs && fs.writeFileSync("./inline-test--module--output.js", it);
 		fs && fs.writeFileSync("./inline-test--module--log.js", log);
-		console.log("logged");
-		return 'function() { (' + src.toString() + ')(); console.log(require("inline-test/markup")(eval("(" + require("inline-test")(' + new Function(it) + ') + ")()"))); }';
+		var runner = 'function() { (' + src.toString() + ')();' + 
+			'var result = require("inline-test/markup")(eval("(" + require("inline-test")(' + new Function(it) + ') + ")()"));'+
+			'if (typeof fs !== "undefined") { fs.writeFileSync("./inlint-test--markup--result.js", result); }'+
+			'console.log(result.replace(/;{2,}(?:(?:\\r?\\n)+;+)*|^;$/gm, "")); }';
+		fs && fs.writeFileSync("./inline-test--module--runner.js", runner);
+		return runner;
 	}
 };
