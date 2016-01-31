@@ -9,7 +9,7 @@ module.exports = function inline_test__module(src, test) {
 			it += lineTest ? "\n" + lineTest : multiLineTest || "";
 			return match;
 		});
-		throw "write output";
+		
 		fs && fs.appendFileSync("./testRun-output.js", it+"\n\n\n");
 		return 'function() { console.log(require("inline-test/markup")(eval("(" + require("inline-test")(' + new Function(it) + ') + ")()"))); }';
 	}
