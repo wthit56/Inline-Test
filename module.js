@@ -10,7 +10,7 @@ module.exports = function inline_test__module(src, test) {
 		src.toString().replace(parse, function(match, hasLineTest, lineTest, hasMultiLineTest, multiLineTest) {
 			it += (
 				hasLineTest ? "\n" + lineTest :
-				hasMultiLineTest ? multiLineTest :
+				hasMultiLineTest ? "\n" + multiLineTest :
 					""
 			);
 			return match;
