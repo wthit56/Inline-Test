@@ -1,4 +1,6 @@
-try { var fs = require("fs"); } catch(e) {}
+try {
+	var fs = 0//require("fs");
+} catch(e) {}
 
 var parse = /("(?:[^"\r\n]*\\[\W\w])[^"\r\n]*"|"(?:[^'\r\n]*\\[\W\w])[^'\r\n]*')|(;?[ \t]*)\/\/\/[ \t]*[^\r\n]*/g,
 	parseFunction = /^(function\s*[^\s(]*\([^)]*\)\s*\{)([\W\w]*)(\})$/,
